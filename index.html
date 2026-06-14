@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vault Study · ISW-521</title>
+  <meta name="description" content="Repaso gamificado persistente para ISW-521 Desarrollo Web." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient ambient-one"></div>
+  <div class="ambient ambient-two"></div>
+
+  <div class="app-frame" id="app">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">V</div>
+        <div>
+          <strong>Vault Study</strong>
+          <span>ISW-521</span>
+        </div>
+      </div>
+
+      <div class="nav-block">
+        <p class="nav-kicker">General</p>
+        <button class="nav-item active" data-view="dashboard"><span>⌘</span>Dashboard</button>
+        <button class="nav-item" data-view="theory"><span>◫</span>Teoría</button>
+        <button class="nav-item" data-view="challenge"><span>◈</span>Challenge</button>
+        <button class="nav-item" data-view="stats"><span>⌁</span>Estadísticas</button>
+        <button class="nav-item" data-view="leaderboard"><span>⇅</span>Puntajes</button>
+      </div>
+
+      <div class="sidebar-footer">
+        <span class="pulse-dot"></span>
+        <div>
+          <strong id="sidebarRank">Rank Rookie</strong>
+          <small>Progreso local activo</small>
+        </div>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="topbar">
+        <button class="mobile-menu" id="mobileMenu" aria-label="Abrir menú">☰</button>
+        <div>
+          <p class="crumb">Dashboard</p>
+          <h1 id="viewTitle">Vault Study</h1>
+        </div>
+        <div class="top-actions">
+          <button class="ghost-btn" id="focusBtn">⚡ Focus</button>
+          <button class="ghost-btn" id="exportBtn">↧ Export</button>
+          <button class="ghost-btn danger" id="resetBtn">Reset</button>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="view active" id="dashboard" aria-labelledby="dashboard-title">
+          <div class="hero-grid">
+            <article class="metric-card balance-card">
+              <span class="eyebrow">Total XP</span>
+              <div class="balance-row">
+                <strong id="totalXp">0</strong>
+                <span class="circle-btn">⌄</span>
+              </div>
+              <small id="lastUpdated">Sin sesiones todavía</small>
+              <button class="primary-btn" data-view-jump="challenge">+ Iniciar challenge</button>
+            </article>
+
+            <article class="chart-card">
+              <div class="card-head">
+                <div class="segmented" role="tablist" aria-label="Indicadores">
+                  <button class="selected">Progreso</button>
+                  <button>Racha</button>
+                  <button>Accuracy</button>
+                </div>
+                <span class="week-chip">Esta semana</span>
+              </div>
+              <svg class="line-chart" viewBox="0 0 720 220" role="img" aria-label="Gráfico de progreso de XP">
+                <defs>
+                  <linearGradient id="chartGlow" x1="0" x2="1">
+                    <stop offset="0" stop-color="#4655ff" />
+                    <stop offset="1" stop-color="#8d5cff" />
+                  </linearGradient>
+                  <filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                </defs>
+                <g class="grid-lines">
+                  <line x1="40" y1="40" x2="690" y2="40" />
+                  <line x1="40" y1="85" x2="690" y2="85" />
+                  <line x1="40" y1="130" x2="690" y2="130" />
+                  <line x1="40" y1="175" x2="690" y2="175" />
+                </g>
+                <polyline id="progressLine" points="40,175 135,150 230,160 325,126 420,138 515,90 610,116 690,82" fill="none" stroke="url(#chartGlow)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" />
+                <g id="chartDots"></g>
+                <g class="axis-labels">
+                  <text x="40" y="205">S1</text><text x="135" y="205">S2</text><text x="230" y="205">S3</text><text x="325" y="205">S4</text><text x="420" y="205">S5</text><text x="515" y="205">S6</text><text x="610" y="205">S7</text><text x="675" y="205">S8</text>
+                  <text x="6" y="44">100%</text><text x="12" y="88">75%</text><text x="12" y="133">50%</text><text x="12" y="178">25%</text>
+                </g>
+              </svg>
+            </article>
+          </div>
+
+          <div class="toolbar-row">
+            <button class="icon-btn" id="searchToggle" aria-label="Buscar" aria-expanded="false">⌕</button>
+            <button class="ghost-btn" data-view-jump="theory">☷ Ver teoría</button>
+            <button class="ghost-btn" data-view-jump="stats">▥ Ver estadísticas</button>
+          </div>
+          <div class="search-bar hidden" id="searchBar" role="search">
+            <input type="text" id="searchInput" class="search-field" placeholder="Buscar misiones, temas…" autocomplete="off" />
+            <button class="icon-btn" id="searchClose" aria-label="Cerrar búsqueda">✕</button>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel">
+              <div class="card-head">
+                <h2 id="dashboard-title">Misiones de repaso</h2>
+                <span class="badge" id="masteryBadge">0/8 listas</span>
+              </div>
+              <div class="mission-list" id="missionList"></div>
+            </article>
+
+            <article class="panel compact-panel">
+              <div class="card-head">
+                <h2>Ritmo actual</h2>
+                <span class="badge">LocalStorage</span>
+              </div>
+              <div class="stat-stack">
+                <div><span>Accuracy</span><strong id="accuracyMetric">0%</strong></div>
+                <div><span>Mejor racha</span><strong id="bestStreakMetric">0</strong></div>
+                <div><span>Intentos</span><strong id="attemptsMetric">0</strong></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="theory" aria-labelledby="theory-title">
+          <div class="section-head">
+            <div>
+              <p class="crumb">Teoría + explicaciones</p>
+              <h2 id="theory-title">Clases del repaso</h2>
+            </div>
+            <span class="badge">8 secciones</span>
+          </div>
+          <div class="topic-tabs" id="topicTabs"></div>
+          <article class="theory-panel" id="theoryPanel"></article>
+        </section>
+
+        <section class="view" id="challenge" aria-labelledby="challenge-title">
+          <div class="challenge-layout">
+            <article class="panel challenge-card">
+              <div class="card-head">
+                <div>
+                  <p class="crumb">Challenge</p>
+                  <h2 id="challenge-title">Modo examen</h2>
+                </div>
+                <span class="badge" id="challengeBadge">10 preguntas</span>
+              </div>
+
+              <div class="challenge-setup" id="challengeSetup">
+                <label class="field-label" for="playerName">Nombre para tabla local</label>
+                <input id="playerName" class="text-field" type="text" maxlength="18" placeholder="BSVS" />
+                <label class="field-label">Temas</label>
+                <div class="chip-actions">
+                  <button class="ghost-btn" id="selectAllTopics">Todos</button>
+                  <button class="ghost-btn" id="clearTopics">Limpiar</button>
+                </div>
+                <div class="topic-chips-select" id="topicChipsSelect"></div>
+                <p class="no-topics-warning hidden" id="noTopicsWarning">Seleccioná al menos un tema para continuar.</p>
+                <div class="setup-grid">
+                  <button class="primary-btn" id="startChallenge">Iniciar challenge</button>
+                  <button class="ghost-btn" id="quickChallenge">Reto flash 5</button>
+                </div>
+                <p class="muted">Cada respuesta correcta suma XP. Al finalizar se guarda en la tabla de puntajes de este navegador.</p>
+              </div>
+
+              <div class="quiz-box hidden" id="quizBox">
+                <div class="quiz-meta">
+                  <span id="quizProgress">Pregunta 1/10</span>
+                  <span id="quizScore">0 XP</span>
+                </div>
+                <div class="progress-track"><div id="quizBar"></div></div>
+                <h3 id="questionText"></h3>
+                <div class="options" id="options"></div>
+                <div class="feedback hidden" id="feedback"></div>
+                <button class="primary-btn hidden" id="nextQuestion">Siguiente</button>
+              </div>
+
+              <div class="result-box hidden" id="resultBox"></div>
+            </article>
+
+            <aside class="panel coach-panel">
+              <h2>Reglas del juego</h2>
+              <ul class="clean-list">
+                <li>Correcta: +100 XP.</li>
+                <li>Racha de 3: bonus +50 XP.</li>
+                <li>≥80%: marca tema como dominado.</li>
+                <li>Todo queda guardado localmente.</li>
+              </ul>
+              <div class="mini-terminal">
+                <span>$ study --mode=exam</span>
+                <span>status: locked in</span>
+                <span>brain: compilando...</span>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="stats" aria-labelledby="stats-title">
+          <div class="section-head">
+            <div>
+              <p class="crumb">Estadísticas</p>
+              <h2 id="stats-title">Rendimiento acumulado</h2>
+            </div>
+            <button class="ghost-btn" data-view-jump="leaderboard">Ver puntajes</button>
+          </div>
+          <div class="stats-grid" id="statsGrid"></div>
+          <article class="panel">
+            <div class="card-head">
+              <h2>Dominio por tema</h2>
+              <span class="badge">Actualización local</span>
+            </div>
+            <div class="topic-progress" id="topicProgress"></div>
+          </article>
+        </section>
+
+        <section class="view" id="leaderboard" aria-labelledby="leaderboard-title">
+          <div class="section-head">
+            <div>
+              <p class="crumb">Tabla persistente</p>
+              <h2 id="leaderboard-title">Puntajes locales</h2>
+            </div>
+            <button class="ghost-btn danger" id="clearLeaderboard">Vaciar tabla</button>
+          </div>
+          <article class="table-panel">
+            <table class="score-table">
+              <thead>
+                <tr><th>#</th><th>Jugador</th><th>XP</th><th>Accuracy</th><th>Tema</th><th>Fecha</th></tr>
+              </thead>
+              <tbody id="leaderboardRows"></tbody>
+            </table>
+          </article>
+        </section>
+      </main>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Pomodoro widget -->
+  <div class="pomodoro-widget hidden" id="pomodoroWidget" role="complementary" aria-label="Pomodoro timer">
+    <div class="pomo-handle" id="pomoHandle">
+      <span class="pomo-title">Pomodoro</span>
+      <button class="pomo-close" id="pomoClose" aria-label="Cerrar pomodoro">✕</button>
+    </div>
+    <div class="pomo-body">
+      <div class="pomo-time" id="pomoTime">25:00</div>
+      <div class="pomo-progress-track"><div class="pomo-progress-bar" id="pomoProgressBar"></div></div>
+      <div class="pomo-presets">
+        <button class="pomo-preset active" data-min="25">25 min</button>
+        <button class="pomo-preset" data-min="45">45 min</button>
+        <button class="pomo-preset" data-min="60">60 min</button>
+      </div>
+      <div class="pomo-custom">
+        <span>Custom:</span>
+        <input type="number" class="pomo-custom-input" id="pomoCustomInput" min="1" max="120" placeholder="min" />
+        <button class="pomo-set-btn" id="pomoSetCustom">Set</button>
+      </div>
+      <div class="pomo-controls">
+        <button class="primary-btn" id="pomoToggle">Iniciar</button>
+        <button class="ghost-btn" id="pomoReset">↺ Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
