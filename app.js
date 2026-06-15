@@ -192,59 +192,107 @@ function renderMissions(filter = "") {
 
 // --- Chart ---
 
+function getChartData(mode) {
+  const topics = STUDY_DATA.topics.slice(0, 8);
+  const xs = [40, 135, 230, 325, 420, 515, 610, 690].slice(0, topics.length);
+
+  if (mode === "progreso") {
+    const hasAnyActivity = state.results.length > 0 || state.studied.length > 0;
+    if (!hasAnyActivity) return null;
+    return topics.map((topic, i) => {
+      const results = state.results.filter(r => r.topicId === topic.id);
+      const total = results.reduce((s, r) => s + Number(r.total || 0), 0);
+      const correct = results.reduce((s, r) => s + Number(r.correct || 0), 0);
+      let value = 0;
+      if (total > 0) value = Math.round((correct / total) * 100);
+      else if (state.studied.includes(topic.id)) value = 100;
+      return { label: "C" + (i + 1), value, x: xs[i] };
+    });
+  }
+
+  if (mode === "racha") {
+    if (state.results.length === 0) return null;
+    const counts = topics.map((topic, i) => ({
+      label: "C" + (i + 1),
+      count: state.results.filter(r => r.topicId === topic.id).length,
+      x: xs[i]
+    }));
+    const maxCount = Math.max(...counts.map(d => d.count), 1);
+    return counts.map(d => ({
+      label: d.label,
+      value: d.count > 0 ? Math.round((d.count / maxCount) * 100) : null,
+      x: d.x
+    }));
+  }
+
+  if (mode === "accuracy") {
+    if (state.results.length === 0) return null;
+    return topics.map((topic, i) => {
+      const results = state.results.filter(r => r.topicId === topic.id);
+      const total = results.reduce((s, r) => s + Number(r.total || 0), 0);
+      const correct = results.reduce((s, r) => s + Number(r.correct || 0), 0);
+      const value = total > 0 ? Math.round((correct / total) * 100) : null;
+      return { label: "C" + (i + 1), value, x: xs[i] };
+    });
+  }
+
+  return null;
+}
+
 function renderChart() {
   const chartCard = $(".chart-card");
+  if (!chartCard) return;
   const svgEl = chartCard.querySelector(".line-chart");
   const emptyEl = chartCard.querySelector(".chart-empty");
 
-  const recent = state.results.slice(-8);
-  const hasData = recent.length > 0;
+  const emptyMessages = {
+    progreso: ["Sin actividad todavía", "Completá un challenge o revisá un tema para ver tu evolución."],
+    racha:    ["Sin sesiones todavía", "Completá challenges para ver tu actividad por clase."],
+    accuracy: ["Sin datos de accuracy", "Completá un challenge para ver tus aciertos por clase."]
+  };
 
-  let values = [];
+  const chartData = getChartData(activeChartTab);
 
-  if (activeChartTab === "progreso") {
-    if (!hasData) {
-      const fallback = [25, 41, 33, 56, 48, 75, 62, 80];
-      values = fallback;
-    } else {
-      values = recent.map(r => Math.round((r.correct / r.total) * 100));
-    }
-  } else if (activeChartTab === "racha") {
-    if (!hasData) {
-      showChartEmpty(svgEl, emptyEl, "Sin sesiones todavía", "Completá challenges para ver tu racha.");
-      return;
-    }
-    const maxStreak = Math.max(...recent.map(r => Number(r.bestStreak || 0)), 1);
-    values = recent.map(r => Math.round((Number(r.bestStreak || 0) / maxStreak) * 100));
-  } else if (activeChartTab === "accuracy") {
-    if (!hasData) {
-      showChartEmpty(svgEl, emptyEl, "Sin datos de accuracy", "Completá un challenge para ver tus aciertos.");
-      return;
-    }
-    values = recent.map(r => Math.round((r.correct / r.total) * 100));
+  if (!chartData) {
+    const [title, subtitle] = emptyMessages[activeChartTab] || ["Sin datos", "Completá challenges."];
+    showChartEmpty(svgEl, emptyEl, title, subtitle);
+    return;
   }
 
-  // Pad to 8 points
-  while (values.length < 8) values.unshift(values[0] || 25);
-  const slice = values.slice(-8);
+  const validPoints = chartData.filter(d => d.value !== null);
+  if (validPoints.length < 2) {
+    const [title, subtitle] = emptyMessages[activeChartTab] || ["Sin datos", "Completá challenges."];
+    showChartEmpty(svgEl, emptyEl, title, subtitle);
+    return;
+  }
 
-  // Hide empty, show SVG
   if (emptyEl) emptyEl.style.display = "none";
   if (svgEl) svgEl.style.display = "";
 
-  const xs = [40, 135, 230, 325, 420, 515, 610, 690];
-  const points = slice.map((value, index) => {
-    const y = 175 - (Math.max(0, Math.min(100, value)) / 100) * 135;
-    return `${xs[index]},${y.toFixed(1)}`;
-  });
+  const axisLabels = svgEl ? svgEl.querySelector(".axis-labels") : null;
+  if (axisLabels) {
+    const xLabels = chartData.map(d => `<text x="${d.x}" y="205">${d.label}</text>`).join("");
+    axisLabels.innerHTML = xLabels +
+      `<text x="6" y="44">100%</text><text x="12" y="88">75%</text><text x="12" y="133">50%</text><text x="12" y="178">25%</text>`;
+  }
 
+  const computed = chartData.map(d => ({
+    x: d.x,
+    y: d.value !== null ? 175 - (Math.max(0, Math.min(100, d.value)) / 100) * 135 : null
+  }));
+
+  // Build polyline points from valid entries only (skip nulls)
+  const linePoints = computed.filter(p => p.y !== null).map(p => `${p.x},${p.y.toFixed(1)}`).join(" ");
   const line = $("#progressLine");
+  if (line) line.setAttribute("points", linePoints);
+
   const dots = $("#chartDots");
-  if (line) line.setAttribute("points", points.join(" "));
-  if (dots) dots.innerHTML = points.map(pair => {
-    const [x, y] = pair.split(",");
-    return `<circle class="chart-dot" cx="${x}" cy="${y}" r="5" />`;
-  }).join("");
+  if (dots) {
+    dots.innerHTML = computed
+      .filter(p => p.y !== null)
+      .map(p => `<circle class="chart-dot" cx="${p.x}" cy="${p.y.toFixed(1)}" r="5" />`)
+      .join("");
+  }
 }
 
 function showChartEmpty(svgEl, emptyEl, title, subtitle) {
