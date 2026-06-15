@@ -126,6 +126,7 @@ function toast(message) {
 function switchView(viewId) {
   $$(".view").forEach(view => view.classList.toggle("active", view.id === viewId));
   $$(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === viewId));
+  $$(".mob-nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.view === viewId));
   const labels = { dashboard: "Vault Study", theory: "Teoría", challenge: "Challenge", stats: "Estadísticas", leaderboard: "Puntajes", sandbox: "Sandbox" };
   $("#viewTitle").textContent = labels[viewId] || "Vault Study";
   $(".topbar .crumb").textContent = viewId === "dashboard" ? "Dashboard" : "Vault / " + labels[viewId];
@@ -1002,10 +1003,8 @@ function initChartTabs() {
 
 function initEvents() {
   $$(".nav-item").forEach(item => item.addEventListener("click", () => switchView(item.dataset.view)));
+  $$(".mob-nav-btn").forEach(btn => btn.addEventListener("click", () => switchView(btn.dataset.view)));
   bindViewJumps();
-
-  $("#mobileMenu").addEventListener("click", () => document.body.classList.toggle("menu-open"));
-  $("#sidebarOverlay").addEventListener("click", () => document.body.classList.remove("menu-open"));
 
   $("#startChallenge").addEventListener("click", () => startChallenge(10));
   $("#quickChallenge").addEventListener("click", () => startChallenge(5));

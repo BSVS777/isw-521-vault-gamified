@@ -22,7 +22,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   margin: 0;
   min-height: 100vh;
@@ -153,6 +153,20 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   flex-shrink: 0;
 }
 
+/* Overlay always out of grid flow; only becomes visible via body.menu-open on mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 29;
+  pointer-events: none;
+}
+body.menu-open .sidebar-overlay {
+  display: block;
+  pointer-events: auto;
+}
+
 .workspace {
   display: grid;
   grid-template-rows: 84px 1fr;
@@ -176,6 +190,7 @@ h2 { margin-bottom: 0; font-size: clamp(1.1rem, 1.8vw, 1.42rem); letter-spacing:
 h3 { line-height: 1.35; }
 .top-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .mobile-menu { display: none; }
+.mobile-bottom-nav { display: none; }
 
 .content {
   min-height: 0;
@@ -909,67 +924,128 @@ h3 { line-height: 1.35; }
   .sandbox-preview-block { height: 280px; }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   body { background: #05060b; }
+
+  /* App shell */
   .app-frame {
-    width: 100vw;
+    width: 100%;
+    max-width: 100%;
     height: 100vh;
     min-height: 100vh;
     margin: 0;
     border-radius: 0;
+    border: none;
+    box-shadow: none;
     grid-template-columns: 1fr;
+    overflow: hidden;
   }
-  .app-frame::before { display:none; }
-  .sidebar {
-    position: fixed;
-    inset: 0 auto 0 0;
-    width: 250px;
-    transform: translateX(-102%);
-    transition: .22s ease;
-    z-index: 30;
-  }
-  body.menu-open .sidebar { transform: translateX(0); }
-  .sidebar-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 29;
-  }
-  body.menu-open .sidebar-overlay { display: block; }
-  .workspace { grid-template-rows: auto 1fr; }
-  .topbar { padding: 12px 14px; }
+  .app-frame::before { display: none; }
+
+  /* Sidebar completely hidden — replaced by bottom nav */
+  .sidebar { display: none; }
+  .sidebar-overlay { display: none !important; }
+
+  /* Workspace fills full width */
+  .workspace { grid-template-rows: auto 1fr; min-width: 0; overflow: hidden; }
+
+  /* Topbar */
+  .topbar { padding: 10px 14px; gap: 8px; }
   .topbar > div:nth-child(2) { min-width: 0; flex: 1; }
-  .mobile-menu {
-    display:grid; place-items:center;
-    min-width: 38px; height:38px;
-    flex-shrink: 0;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.06);
-    color:#fff;
-  }
   .top-actions { gap: 5px; flex-shrink: 0; }
-  .top-actions .ghost-btn { min-height: 32px; padding: 0 8px; font-size: 0.75rem; }
-  .top-actions .primary-btn { min-height: 32px; padding: 0 8px; font-size: 0.75rem; }
-  .content { padding: 14px; }
+  .top-actions .ghost-btn { min-height: 30px; padding: 0 8px; font-size: 0.74rem; }
+  .top-actions .primary-btn { min-height: 30px; padding: 0 8px; font-size: 0.74rem; }
+
+  /* Content — extra bottom padding so bottom nav doesn't cover content */
+  .content {
+    padding: 12px 12px calc(68px + env(safe-area-inset-bottom, 0px) + 12px);
+    overflow-x: hidden;
+    min-width: 0;
+  }
+
+  /* Grid collapses */
+  .hero-grid { grid-template-columns: 1fr; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .challenge-layout { grid-template-columns: 1fr; }
+  .setup-grid, .stats-grid { grid-template-columns: 1fr; }
+  .topic-progress-row { grid-template-columns: 1fr; gap: 7px; }
+
+  /* Cards */
   .chart-card { padding: 12px; }
   .line-chart { height: 140px; }
   .mission { grid-template-columns: 42px 1fr; }
-  .mission .status-pill { grid-column: 1 / -1; justify-self:start; }
+  .mission .status-pill { grid-column: 1 / -1; justify-self: start; }
+
+  /* Theory */
   .theory-top { grid-template-columns: 1fr; }
-  .setup-grid, .stats-grid { grid-template-columns: 1fr; }
-  .topic-progress-row { grid-template-columns: 1fr; gap: 7px; }
+
+  /* Challenge */
+  .challenge-setup { max-width: 100%; width: 100%; }
+  .topic-chips-select { flex-wrap: wrap; }
+  .chip-actions { flex-wrap: wrap; }
+
+  /* Misc flex wraps */
+  .section-head { flex-wrap: wrap; gap: 10px; }
+  .card-head { flex-wrap: wrap; gap: 8px; }
+  .quiz-meta { flex-wrap: wrap; gap: 8px; }
+
+  /* Sandbox */
   .sandbox-layout { height: auto; }
   .sandbox-editors { height: 320px; }
   .sandbox-preview-block { height: 240px; }
-  .section-head { flex-wrap: wrap; gap: 10px; }
 
+  /* Bottom navigation bar */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    width: 100%;
+    max-width: 100%;
+    background: rgba(6, 8, 18, 0.97);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .mobile-bottom-nav::-webkit-scrollbar { display: none; }
+
+  .mob-nav-btn {
+    flex: 1;
+    min-width: 52px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 2px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    border-radius: 10px;
+    transition: color 0.16s ease, background 0.16s ease;
+    cursor: pointer;
+  }
+  .mob-nav-btn span { font-size: 1.1rem; line-height: 1; display: block; }
+  .mob-nav-btn small { font-size: 0.6rem; line-height: 1; display: block; color: inherit; }
+  .mob-nav-btn.active { color: #ffffff; }
+  .mob-nav-btn.active span {
+    filter: drop-shadow(0 0 6px rgba(70, 85, 255, 0.9));
+  }
+  .mob-nav-btn:not(.active):hover { color: #c3c7d9; background: rgba(255,255,255,0.05); }
+
+  /* Pomodoro stacks at bottom, above nav */
   .pomodoro-widget {
     position: fixed;
     left: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
     top: auto !important;
     width: 100% !important;
     border-radius: 18px 18px 0 0;
