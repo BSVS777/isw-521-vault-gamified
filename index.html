@@ -12,6 +12,7 @@
   <div class="ambient ambient-two"></div>
 
   <div class="app-frame" id="app">
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <aside class="sidebar" aria-label="Navegación principal">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">V</div>
@@ -28,6 +29,7 @@
         <button class="nav-item" data-view="challenge"><span>◈</span>Challenge</button>
         <button class="nav-item" data-view="stats"><span>⌁</span>Estadísticas</button>
         <button class="nav-item" data-view="leaderboard"><span>⇅</span>Puntajes</button>
+        <button class="nav-item" data-view="sandbox"><span>⌗</span>Sandbox</button>
       </div>
 
       <div class="sidebar-footer">
@@ -57,12 +59,19 @@
         <section class="view active" id="dashboard" aria-labelledby="dashboard-title">
           <div class="hero-grid">
             <article class="metric-card balance-card">
-              <span class="eyebrow">Total XP</span>
+              <span class="eyebrow">Total Piñas 🍍</span>
               <div class="balance-row">
                 <strong id="totalXp">0</strong>
                 <span class="circle-btn">⌄</span>
               </div>
               <small id="lastUpdated">Sin sesiones todavía</small>
+              <div class="rank-display">
+                <div class="rank-name-row">
+                  <span id="rankNameDisplay">Brote de Piña</span>
+                </div>
+                <div class="rank-progress-track"><div class="rank-progress-bar" id="rankProgressBar"></div></div>
+                <small class="rank-next-label" id="rankNextLabel"></small>
+              </div>
               <button class="primary-btn" data-view-jump="challenge">+ Iniciar challenge</button>
             </article>
 
@@ -75,7 +84,7 @@
                 </div>
                 <span class="week-chip">Esta semana</span>
               </div>
-              <svg class="line-chart" viewBox="0 0 720 220" role="img" aria-label="Gráfico de progreso de XP">
+              <svg class="line-chart" viewBox="0 0 720 220" role="img" aria-label="Gráfico de progreso">
                 <defs>
                   <linearGradient id="chartGlow" x1="0" x2="1">
                     <stop offset="0" stop-color="#4655ff" />
@@ -152,7 +161,7 @@
                   <p class="crumb">Challenge</p>
                   <h2 id="challenge-title">Modo examen</h2>
                 </div>
-                <span class="badge" id="challengeBadge">10 preguntas</span>
+                <span class="badge" id="challengeBadge">Basado en tópicos</span>
               </div>
 
               <div class="challenge-setup" id="challengeSetup">
@@ -169,13 +178,13 @@
                   <button class="primary-btn" id="startChallenge">Iniciar challenge</button>
                   <button class="ghost-btn" id="quickChallenge">Reto flash 5</button>
                 </div>
-                <p class="muted">Cada respuesta correcta suma XP. Al finalizar se guarda en la tabla de puntajes de este navegador.</p>
+                <p class="muted">Cada respuesta correcta suma piñas. Al finalizar se guarda en la tabla de puntajes de este navegador.</p>
               </div>
 
               <div class="quiz-box hidden" id="quizBox">
                 <div class="quiz-meta">
                   <span id="quizProgress">Pregunta 1/10</span>
-                  <span id="quizScore">0 XP</span>
+                  <span id="quizScore">0 piñas</span>
                 </div>
                 <div class="progress-track"><div id="quizBar"></div></div>
                 <h3 id="questionText"></h3>
@@ -190,8 +199,8 @@
             <aside class="panel coach-panel">
               <h2>Reglas del juego</h2>
               <ul class="clean-list">
-                <li>Correcta: +100 XP.</li>
-                <li>Racha de 3: bonus +50 XP.</li>
+                <li>Correcta: +100 piñas.</li>
+                <li>Racha de 3: bonus +50 piñas.</li>
                 <li>≥80%: marca tema como dominado.</li>
                 <li>Todo queda guardado localmente.</li>
               </ul>
@@ -213,6 +222,7 @@
             <button class="ghost-btn" data-view-jump="leaderboard">Ver puntajes</button>
           </div>
           <div class="stats-grid" id="statsGrid"></div>
+          <div id="rankSection"></div>
           <article class="panel">
             <div class="card-head">
               <h2>Dominio por tema</h2>
@@ -233,11 +243,40 @@
           <article class="table-panel">
             <table class="score-table">
               <thead>
-                <tr><th>#</th><th>Jugador</th><th>XP</th><th>Accuracy</th><th>Tema</th><th>Fecha</th></tr>
+                <tr><th>#</th><th>Jugador</th><th>Piñas 🍍</th><th>Accuracy</th><th>Tema</th><th>Fecha</th></tr>
               </thead>
               <tbody id="leaderboardRows"></tbody>
             </table>
           </article>
+        </section>
+        <section class="view" id="sandbox" aria-labelledby="sandbox-title">
+          <div class="section-head">
+            <div>
+              <p class="crumb">Editor en vivo</p>
+              <h2 id="sandbox-title">Sandbox HTML/CSS</h2>
+            </div>
+            <div class="top-actions">
+              <button class="primary-btn" id="sandboxRun">▶ Ejecutar</button>
+              <button class="ghost-btn" id="sandboxClear">Limpiar</button>
+              <button class="ghost-btn" id="sandboxReset">↺ Ejemplo</button>
+            </div>
+          </div>
+          <div class="sandbox-layout">
+            <div class="sandbox-editors">
+              <div class="sandbox-editor-block">
+                <div class="sandbox-editor-label">HTML</div>
+                <textarea class="sandbox-textarea" id="sandboxHtml" spellcheck="false" placeholder="Escribe tu HTML aquí…"></textarea>
+              </div>
+              <div class="sandbox-editor-block">
+                <div class="sandbox-editor-label">CSS</div>
+                <textarea class="sandbox-textarea" id="sandboxCss" spellcheck="false" placeholder="Escribe tu CSS aquí…"></textarea>
+              </div>
+            </div>
+            <div class="sandbox-preview-block">
+              <div class="sandbox-editor-label">Vista previa</div>
+              <iframe class="sandbox-iframe" id="sandboxPreview" sandbox="allow-same-origin" title="Vista previa del código"></iframe>
+            </div>
+          </div>
         </section>
       </main>
     </section>

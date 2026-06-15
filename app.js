@@ -1,5 +1,50 @@
 const STORAGE_KEY = "isw521-vault-study-v1";
 const POMO_KEY = "isw521-pomo-pos-v1";
+const SANDBOX_KEY = "isw521-sandbox-v1";
+
+const RANKS = [
+  { min: 0,    max: 99,       name: "Brote de Piña" },
+  { min: 100,  max: 249,      name: "Piñita Promesa" },
+  { min: 250,  max: 499,      name: "Cosechador Tropical" },
+  { min: 500,  max: 899,      name: "Guerrero Bromelia" },
+  { min: 900,  max: 1399,     name: "Barón de la Piña" },
+  { min: 1400, max: 1999,     name: "Señor del Jugo Dorado" },
+  { min: 2000, max: 2999,     name: "Comandante Ananá" },
+  { min: 3000, max: Infinity, name: "Master Piña Supremo" },
+];
+
+const DEFAULT_SANDBOX_HTML = `<section class="card">
+  <h1>Hola, Vault Study</h1>
+  <p>Estoy practicando HTML y CSS.</p>
+  <button>Entrar al modo piña</button>
+</section>`;
+
+const DEFAULT_SANDBOX_CSS = `body {
+  font-family: system-ui, sans-serif;
+  background: #10111f;
+  color: white;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.card {
+  padding: 2rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #1f2340, #35235f);
+  box-shadow: 0 0 40px rgba(123, 92, 255, 0.35);
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.75rem 1rem;
+  background: #7b5cff;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}`;
 const $ = (selector, parent = document) => parent.querySelector(selector);
 const $$ = (selector, parent = document) => [...parent.querySelectorAll(selector)];
 
@@ -48,13 +93,20 @@ function bestStreak() {
   return state.results.reduce((best, item) => Math.max(best, Number(item.bestStreak || 0)), 0);
 }
 
-function rankName() {
-  const xp = xpTotal();
-  if (xp >= 7000) return "Rank Legend";
-  if (xp >= 4500) return "Rank Architect";
-  if (xp >= 2500) return "Rank Pro";
-  if (xp >= 1000) return "Rank Builder";
-  return "Rank Rookie";
+function getCurrentRank(total) {
+  return RANKS.find(r => total >= r.min && total <= r.max) || RANKS[0];
+}
+
+function getRankProgress(total) {
+  const rank = getCurrentRank(total);
+  const idx = RANKS.indexOf(rank);
+  if (rank.max === Infinity) {
+    return { rank, progress: 100, next: null, remaining: 0 };
+  }
+  const next = RANKS[idx + 1];
+  const span = rank.max - rank.min + 1;
+  const progress = Math.min(100, Math.round(((total - rank.min) / span) * 100));
+  return { rank, progress, next, remaining: rank.max - total + 1 };
 }
 
 function topicById(id) {
@@ -74,7 +126,7 @@ function toast(message) {
 function switchView(viewId) {
   $$(".view").forEach(view => view.classList.toggle("active", view.id === viewId));
   $$(".nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === viewId));
-  const labels = { dashboard: "Vault Study", theory: "Teoría", challenge: "Challenge", stats: "Estadísticas", leaderboard: "Puntajes" };
+  const labels = { dashboard: "Vault Study", theory: "Teoría", challenge: "Challenge", stats: "Estadísticas", leaderboard: "Puntajes", sandbox: "Sandbox" };
   $("#viewTitle").textContent = labels[viewId] || "Vault Study";
   $(".topbar .crumb").textContent = viewId === "dashboard" ? "Dashboard" : "Vault / " + labels[viewId];
   document.body.classList.remove("menu-open");
@@ -84,12 +136,25 @@ function switchView(viewId) {
 // --- Dashboard ---
 
 function renderDashboard() {
-  $("#totalXp").textContent = xpTotal().toLocaleString("es-CR");
+  const total = xpTotal();
+  const { rank, progress, next, remaining } = getRankProgress(total);
+
+  $("#totalXp").textContent = total.toLocaleString("es-CR");
   $("#accuracyMetric").textContent = `${accuracyTotal()}%`;
   $("#bestStreakMetric").textContent = bestStreak();
   $("#attemptsMetric").textContent = state.results.length;
   $("#masteryBadge").textContent = `${state.studied.length}/8 listas`;
-  $("#sidebarRank").textContent = rankName();
+  $("#sidebarRank").textContent = `🍍 ${rank.name}`;
+
+  const rankNameEl = $("#rankNameDisplay");
+  const rankBarEl = $("#rankProgressBar");
+  const rankNextEl = $("#rankNextLabel");
+  if (rankNameEl) rankNameEl.textContent = `🍍 ${rank.name}`;
+  if (rankBarEl) rankBarEl.style.width = `${progress}%`;
+  if (rankNextEl) rankNextEl.textContent = next
+    ? `Faltan ${remaining} piñas para ${next.name}`
+    : "¡Nivel máximo alcanzado!";
+
   const last = state.results.at(-1);
   $("#lastUpdated").textContent = last
     ? `Actualizado ${new Date(last.date).toLocaleDateString("es-CR")}`
@@ -260,6 +325,18 @@ function renderTheory() {
 
 // --- Challenge (multi-topic) ---
 
+function updateChallengeBadge() {
+  const badge = $("#challengeBadge");
+  if (!badge) return;
+  if (!selectedTopicIds.size) {
+    badge.textContent = "Basado en tópicos";
+    return;
+  }
+  const pool = buildQuestionPool([...selectedTopicIds]);
+  const count = Math.min(10, pool.length);
+  badge.textContent = `${count} preguntas disponibles`;
+}
+
 function renderChallengeSetup() {
   $("#playerName").value = state.player || "BSVS";
 
@@ -281,8 +358,11 @@ function renderChallengeSetup() {
         btn.classList.add("selected");
       }
       $("#noTopicsWarning").classList.toggle("hidden", selectedTopicIds.size > 0);
+      updateChallengeBadge();
     });
   });
+
+  updateChallengeBadge();
 }
 
 function buildQuestionPool(topicIds) {
@@ -335,7 +415,7 @@ function renderQuestion() {
   const question = quiz.questions[quiz.index];
   quiz.locked = false;
   $("#quizProgress").textContent = `Pregunta ${quiz.index + 1}/${quiz.questions.length}`;
-  $("#quizScore").textContent = `${quiz.xp} XP`;
+  $("#quizScore").textContent = `${quiz.xp} piñas`;
   $("#quizBar").style.width = `${(quiz.index / quiz.questions.length) * 100}%`;
   $("#questionText").textContent = question.q;
   $("#feedback").classList.add("hidden");
@@ -367,7 +447,7 @@ function answerQuestion(selected) {
   } else {
     quiz.streak = 0;
   }
-  $("#quizScore").textContent = `${quiz.xp} XP`;
+  $("#quizScore").textContent = `${quiz.xp} piñas`;
   const feedback = $("#feedback");
   feedback.innerHTML = `<strong>${correct ? "Correcto. Clean." : "Incorrecto. Ajuste fino."}</strong><br>${question.why}`;
   feedback.classList.remove("hidden");
@@ -388,6 +468,8 @@ function finishChallenge() {
   const total = quiz.questions.length;
   const accuracy = Math.round((quiz.correct / total) * 100);
   $("#quizBar").style.width = "100%";
+
+  const prevRank = getCurrentRank(xpTotal());
 
   const result = {
     player: quiz.player,
@@ -410,13 +492,18 @@ function finishChallenge() {
   }
   saveState();
 
+  const newRank = getCurrentRank(xpTotal());
+  if (newRank.name !== prevRank.name) {
+    setTimeout(() => toast(`🍍 ¡Subiste a ${newRank.name}!`), 400);
+  }
+
   $("#quizBox").classList.add("hidden");
   const resultBox = $("#resultBox");
   resultBox.classList.remove("hidden");
   resultBox.innerHTML = `
     <h3>Resultado guardado</h3>
     <div class="stats-grid">
-      <div class="stat-card"><span>XP</span><strong>${quiz.xp}</strong></div>
+      <div class="stat-card"><span>Piñas 🍍</span><strong>${quiz.xp}</strong></div>
       <div class="stat-card"><span>Correctas</span><strong>${quiz.correct}/${total}</strong></div>
       <div class="stat-card"><span>Accuracy</span><strong>${accuracy}%</strong></div>
       <div class="stat-card"><span>Mejor racha</span><strong>${quiz.bestStreak}</strong></div>
@@ -443,13 +530,31 @@ function resetChallengeUI() {
 // --- Stats ---
 
 function renderStats() {
+  const total = xpTotal();
+  const { rank, progress, next, remaining } = getRankProgress(total);
   const cards = [
-    ["Total XP", xpTotal().toLocaleString("es-CR")],
+    ["Total Piñas 🍍", total.toLocaleString("es-CR")],
+    ["Rango actual", rank.name],
     ["Accuracy", `${accuracyTotal()}%`],
-    ["Intentos", state.results.length],
     ["Temas dominados", `${state.studied.length}/8`]
   ];
   $("#statsGrid").innerHTML = cards.map(([label, value]) => `<div class="stat-card"><span>${label}</span><strong>${value}</strong></div>`).join("");
+
+  const rankSection = $("#rankSection");
+  if (rankSection) {
+    rankSection.innerHTML = next
+      ? `<article class="panel" style="margin-bottom:18px;padding:18px;">
+          <div class="card-head" style="margin-bottom:12px;">
+            <h2>Progreso de rango</h2>
+            <span class="badge">${rank.name}</span>
+          </div>
+          <div class="rank-progress-track"><div class="rank-progress-bar" style="width:${progress}%"></div></div>
+          <small class="rank-next-label" style="display:block;margin-top:6px;">Faltan <strong>${remaining}</strong> piñas para <strong>${next.name}</strong></small>
+        </article>`
+      : `<article class="panel" style="margin-bottom:18px;padding:18px;">
+          <p style="margin:0;color:var(--accent-2);font-weight:600;">🍍 Master Piña Supremo alcanzado. No hay más arriba.</p>
+        </article>`;
+  }
 
   $("#topicProgress").innerHTML = STUDY_DATA.topics.map(topic => {
     const results = state.results.filter(result => result.topicId === topic.id || result.topicId === "all");
@@ -754,6 +859,68 @@ const pomo = {
   }
 };
 
+// --- Sandbox ---
+
+let sandboxDebounce = null;
+
+function sandboxRun() {
+  const html = $("#sandboxHtml").value;
+  const css = $("#sandboxCss").value;
+  const safeHtml = html.replace(/<script[\s\S]*?<\/script>/gi, "<!-- js disabled -->");
+  $("#sandboxPreview").srcdoc =
+    `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${safeHtml}</body></html>`;
+  saveSandbox();
+}
+
+function saveSandbox() {
+  try {
+    localStorage.setItem(SANDBOX_KEY, JSON.stringify({
+      html: $("#sandboxHtml").value,
+      css: $("#sandboxCss").value
+    }));
+  } catch {}
+}
+
+function loadSandbox() {
+  try {
+    const raw = localStorage.getItem(SANDBOX_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      $("#sandboxHtml").value = data.html ?? DEFAULT_SANDBOX_HTML;
+      $("#sandboxCss").value = data.css ?? DEFAULT_SANDBOX_CSS;
+    } else {
+      $("#sandboxHtml").value = DEFAULT_SANDBOX_HTML;
+      $("#sandboxCss").value = DEFAULT_SANDBOX_CSS;
+    }
+  } catch {
+    $("#sandboxHtml").value = DEFAULT_SANDBOX_HTML;
+    $("#sandboxCss").value = DEFAULT_SANDBOX_CSS;
+  }
+  sandboxRun();
+}
+
+function initSandbox() {
+  loadSandbox();
+  $("#sandboxRun").addEventListener("click", sandboxRun);
+  $("#sandboxClear").addEventListener("click", () => {
+    $("#sandboxHtml").value = "";
+    $("#sandboxCss").value = "";
+    $("#sandboxPreview").srcdoc = "";
+    saveSandbox();
+  });
+  $("#sandboxReset").addEventListener("click", () => {
+    $("#sandboxHtml").value = DEFAULT_SANDBOX_HTML;
+    $("#sandboxCss").value = DEFAULT_SANDBOX_CSS;
+    sandboxRun();
+  });
+  const onInput = () => {
+    clearTimeout(sandboxDebounce);
+    sandboxDebounce = setTimeout(sandboxRun, 600);
+  };
+  $("#sandboxHtml").addEventListener("input", onInput);
+  $("#sandboxCss").addEventListener("input", onInput);
+}
+
 // --- Utilities ---
 
 function bindViewJumps(root = document) {
@@ -790,6 +957,7 @@ function initEvents() {
   bindViewJumps();
 
   $("#mobileMenu").addEventListener("click", () => document.body.classList.toggle("menu-open"));
+  $("#sidebarOverlay").addEventListener("click", () => document.body.classList.remove("menu-open"));
 
   $("#startChallenge").addEventListener("click", () => startChallenge(10));
   $("#quickChallenge").addEventListener("click", () => startChallenge(5));
@@ -823,11 +991,13 @@ function initEvents() {
     selectedTopicIds = new Set(STUDY_DATA.topics.map(t => t.id));
     $$(".topic-chip-btn").forEach(b => b.classList.add("selected"));
     $("#noTopicsWarning").classList.add("hidden");
+    updateChallengeBadge();
   });
   $("#clearTopics").addEventListener("click", () => {
     selectedTopicIds.clear();
     $$(".topic-chip-btn").forEach(b => b.classList.remove("selected"));
     $("#noTopicsWarning").classList.remove("hidden");
+    updateChallengeBadge();
   });
 
   // Search
@@ -856,4 +1026,5 @@ function initEvents() {
 document.addEventListener("DOMContentLoaded", () => {
   initEvents();
   renderAll();
+  initSandbox();
 });

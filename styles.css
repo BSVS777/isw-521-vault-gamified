@@ -787,6 +787,92 @@ h3 { line-height: 1.35; }
   font-size: 0.82rem;
 }
 
+/* === Rank display === */
+.rank-display { margin: 10px 0 4px; }
+.rank-name-row {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c3c8e8;
+  margin-bottom: 6px;
+}
+.rank-progress-track {
+  height: 5px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.rank-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: inherit;
+  transition: width 0.4s ease;
+}
+.rank-next-label { font-size: 0.7rem; color: var(--muted-2); }
+
+/* === Sandbox === */
+.sandbox-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  height: calc(100vh - 290px);
+  min-height: 400px;
+}
+.sandbox-editors {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.sandbox-editor-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.sandbox-editor-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
+}
+.sandbox-textarea {
+  flex: 1;
+  width: 100%;
+  resize: none;
+  background: rgba(4, 5, 12, 0.9);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  color: #c8d0ee;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  padding: 14px;
+  tab-size: 2;
+  transition: border-color 0.18s;
+}
+.sandbox-textarea:focus {
+  outline: none;
+  border-color: rgba(70, 85, 255, 0.5);
+  background: rgba(6, 7, 16, 0.95);
+}
+.sandbox-preview-block {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.sandbox-iframe {
+  flex: 1;
+  width: 100%;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+
 /* Focus mode */
 .focus-mode-banner {
   display: flex;
@@ -814,6 +900,15 @@ h3 { line-height: 1.35; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+@media (max-width: 900px) {
+  .sandbox-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .sandbox-editors { height: 360px; }
+  .sandbox-preview-block { height: 280px; }
+}
+
 @media (max-width: 760px) {
   body { background: #05060b; }
   .app-frame {
@@ -834,19 +929,30 @@ h3 { line-height: 1.35; }
     z-index: 30;
   }
   body.menu-open .sidebar { transform: translateX(0); }
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 29;
+  }
+  body.menu-open .sidebar-overlay { display: block; }
   .workspace { grid-template-rows: auto 1fr; }
-  .topbar { padding: 14px 16px; align-items:flex-start; }
+  .topbar { padding: 12px 14px; }
+  .topbar > div:nth-child(2) { min-width: 0; flex: 1; }
   .mobile-menu {
     display:grid; place-items:center;
     min-width: 38px; height:38px;
+    flex-shrink: 0;
     border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(255,255,255,0.06);
     color:#fff;
   }
-  .top-actions { gap: 6px; }
-  .top-actions .ghost-btn { min-height: 34px; padding: 0 9px; font-size: 0.78rem; }
-  .content { padding: 16px; }
+  .top-actions { gap: 5px; flex-shrink: 0; }
+  .top-actions .ghost-btn { min-height: 32px; padding: 0 8px; font-size: 0.75rem; }
+  .top-actions .primary-btn { min-height: 32px; padding: 0 8px; font-size: 0.75rem; }
+  .content { padding: 14px; }
   .chart-card { padding: 12px; }
   .line-chart { height: 140px; }
   .mission { grid-template-columns: 42px 1fr; }
@@ -854,6 +960,10 @@ h3 { line-height: 1.35; }
   .theory-top { grid-template-columns: 1fr; }
   .setup-grid, .stats-grid { grid-template-columns: 1fr; }
   .topic-progress-row { grid-template-columns: 1fr; gap: 7px; }
+  .sandbox-layout { height: auto; }
+  .sandbox-editors { height: 320px; }
+  .sandbox-preview-block { height: 240px; }
+  .section-head { flex-wrap: wrap; gap: 10px; }
 
   .pomodoro-widget {
     position: fixed;
